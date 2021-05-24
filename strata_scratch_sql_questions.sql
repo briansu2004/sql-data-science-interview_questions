@@ -104,4 +104,42 @@ ORDER BY final.user;
 
 
 -------------------------------------------------------------------------------------------------
+-- Q Highest Cost Orders
+-- Find the customer with the highest total order cost between 2019-02-01 to 2019-05-01. Output their first name, total cost of their items, and the date.
 
+-- For simplicity, you can assume that every first name in the dataset is unique.
+
+--customers
+-- idint
+-- first_namevarchar
+-- last_namevarchar
+-- cityvarchar
+-- addressvarchar
+-- phone_numbervarchar
+
+-- orders
+-- idint
+-- cust_idint
+-- order_datedatetime
+-- order_quantityint
+-- order_detailsvarchar
+-- order_cost
+
+--solution
+
+
+SELECT c1.first_name,
+t1.order_date, 
+t1.total_exp
+FROM(
+    SELECT cust_id,
+    order_date,
+    SUM(order_cost*order_quantity) AS total_exp,
+    RANK() OVER (ORDER BY SUM(order_cost*order_quantity) DESC) AS highest_exp
+    FROM orders
+    WHERE order_date BETWEEN '2019-02-01' AND '2019-05-01'
+    GROUP BY order_date, cust_id
+    ORDER BY total_exp DESC) t1
+JOIN customers AS c1
+ON t1.cust_id = c1.id
+WHERE highest_exp = 1

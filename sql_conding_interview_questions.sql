@@ -543,11 +543,49 @@ SELECT * FROM part2) final
 GROUP BY final.user
 ORDER BY final.user
 
-
-
-
-
-
-
-
-
+-------------------------------------------------------------------------------------------------
+-- QCumulative spend https://sqlpad.io/questions/70/cumulative-spend/
+-- solution:
+WITH customer_spend AS (
+    SELECT
+      DATE(payment_ts) date,
+      customer_id,
+      SUM(amount) AS daily_spend
+    FROM payment
+    WHERE customer_id IN (1, 2, 3)
+    GROUP BY DATE(payment_ts), customer_id
+)
+SELECT date,
+  customer_id,
+  daily_spend,
+  SUM(daily_spend) OVER(PARTITION BY customer_id ORDER BY date)
+cumulative_spend
+FROM customer_spend;
+-------------------------------------------------------------------------------------------------
+-- Q73.Number of days to become a happy customer
+with 
+cust_rental_data as(
+	select
+	cust_id,
+	rental_ts,
+	row_number() over(partition by cust_id order by rental_ts) rental_idx
+	from rental
+)
+select
+round(avg(delta)) as avg_days
+from
+	(
+		select
+		cust_id,
+		first_rental_ts,
+		tenth_rental_ts,
+		extract(DAYS FROM tenth_rental_ts - first_rental_ts) as delta
+		FROM
+			(select
+			cust_id,
+			max(case when rental_idx = 1 then rental_ts else null end) as first_rental_ts,
+			max(case when rental_idx = 10 then rental_ts else null end) as tenth_rental_ts
+			from cust_rental_data
+			group by cust_id) tb1
+		where tenth_rental_ts is not null
+) tb2;
