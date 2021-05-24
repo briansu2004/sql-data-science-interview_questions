@@ -201,3 +201,15 @@ LEFT JOIN
 AND a.user_id_receiver=b.user_id_receiver
 GROUP BY a.date
 -------------------------------------------------------------------------------------------------
+-- Top Search Results https://platform.stratascratch.com/coding-question?id=10288&python=
+-- You're given a table that contains search results. If the 'position' column represents the position of the search results, 
+-- write a query to calculate the percentage of search results that were in the top 3 position.
+
+SELECT (count(b.result_id)/count(a.result_id)::float)*100 AS top_3_percentage
+FROM fb_search_results a
+LEFT JOIN
+  (SELECT result_id,
+          position
+   FROM fb_search_results
+   WHERE position <=3) b ON a.result_id = b.result_id
+-------------------------------------------------------------------------------------------------
