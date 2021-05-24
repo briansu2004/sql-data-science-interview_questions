@@ -143,3 +143,61 @@ FROM(
 JOIN customers AS c1
 ON t1.cust_id = c1.id
 WHERE highest_exp = 1
+
+-------------------------------------------------------------------------------------------------
+-- *******************
+-- Acceptance Rate By Date https://platform.stratascratch.com/coding-question?id=10285&python=
+-- What is the overall friend acceptance rate by date? Your output should have the rate of acceptances
+--  by the date the request was sent. Order by the earliest date to latest.
+-- Assume that each friend request starts by a user sending (i.e., user_id_sender) a friend request to another user 
+-- (i.e., user_id_receiver) that's logged in the table with action = 'sent'. 
+-- If the request is accepted, the table logs action = 'accepted'. 
+-- If the request is not accepted, no record of action = 'accepted' is logged.
+-- table
+-- user_id_sender	user_id_receiver	date	action
+-- ad4943sdz	948ksx123d	2020-01-04	sent
+-- fg503kdsdd	ofp049dkd	2020-01-04	sent
+-- dfdfxf9483	9djjjd9283	2020-01-04	sent
+-- hh643dfert	847jfkf203	2020-01-04	sent
+-- ad4943sdz	948ksx123d	2020-01-06	accepted
+-- fffkfld9499	993lsldidif	2020-01-06	sent
+-- fg503kdsdd	ofp049dkd	2020-01-10	accepted
+-- fffkfld9499	993lsldidif	2020-01-10	accepted
+
+-- my solution
+with sent as (select * 
+from fb_friend_requests
+where action = 'sent'),
+
+received as (select *
+from fb_friend_requests
+where action = 'accepted'),
+
+combined as (
+    select sent.date, sent.user_id_sender, sent.user_id_receiver,
+ sent.action as sent_action, received.action as received_action
+from sent 
+left join received
+on sent.user_id_sender = received.user_id_sender
+and sent.user_id_receiver = received.user_id_receiver)
+
+select date, sum(case when received_action is null then 0 else 1 end)*1.0 / count(*)
+from combined
+group by date
+
+-- author's solution
+SELECT a.date,
+       count(b.user_id_receiver)/count(a.user_id_sender)::decimal AS percentage_acceptance
+FROM
+  (SELECT date, user_id_sender,
+                user_id_receiver
+   FROM fb_friend_requests
+   WHERE action='sent' ) a
+LEFT JOIN
+  (SELECT date, user_id_sender,
+                user_id_receiver
+   FROM fb_friend_requests
+   WHERE action='accepted' ) b ON a.user_id_sender=b.user_id_sender
+AND a.user_id_receiver=b.user_id_receiver
+GROUP BY a.date
+-------------------------------------------------------------------------------------------------
