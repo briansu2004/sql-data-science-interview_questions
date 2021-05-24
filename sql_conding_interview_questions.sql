@@ -669,3 +669,44 @@ district,
 FROM district_cust_cnt
 WHERE cust_desc_idx = 1
 -------------------------------------------------------------------------------------------------
+-- Question 78. Quartiles buckets by number of rentals 
+WITH cust_rentals AS (
+    SELECT C.customer_id,
+    MAX(C.store_id) AS store_id, -- one customer can only belong to one
+store
+    COUNT(*) AS num_rentals FROM
+    rental R
+    INNER JOIN customer C
+    ON C.customer_id = R.customer_id
+    GROUP BY C.customer_id
+)
+SELECT customer_id, store_id, quartile
+FROM (
+    SELECT
+        customer_id,
+store_id,
+        NTILE(4) OVER(PARTITION BY store_id ORDER BY num_rentals) AS
+quartile
+FROM cust_rentals )X
+WHERE customer_id IN (1,2,3,4,5,6,7,8,9,10);
+-------------------------------------------------------------------------------------------------
+-- Question 79. Spend difference between the last and the second last rentals
+Solution
+WITH cust_spend_seq AS (
+    SELECT
+      customer_id,
+      payment_ts,
+      amount AS current_payment,
+      LAG(amount, 1) OVER(PARTITION BY customer_id ORDER BY payment_ts) AS
+prev_payment,
+      ROW_NUMBER() OVER(PARTITION BY customer_id ORDER BY payment_ts DESC)
+AS payment_idx
+    FROM payment P
+)
+SELECT
+    customer_id,
+    current_payment - prev_payment AS delta
+FROM cust_spend_seq
+WHERE customer_id IN(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+AND payment_idx = 1;
+-------------------------------------------------------------------------------------------------
