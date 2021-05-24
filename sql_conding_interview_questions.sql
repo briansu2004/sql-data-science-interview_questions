@@ -589,3 +589,83 @@ from
 			group by cust_id) tb1
 		where tenth_rental_ts is not null
 ) tb2;
+-------------------------------------------------------------------------------------------------
+-- Q74The most productive actors by category
+with actor_movies_data as(
+	select
+	actor_id,
+	category_id,
+	count(distinct film_id) as movie_count
+	FROM film_actor FA
+	INNER JOIN film F
+	ON F.film_id = FA.film_id
+	INNER JOIN film_category FC
+	ON FC.film_id = F.film_id
+	GROUP BY FC.category_id, FA.actor_id
+)
+select  category_id,
+actor_id,
+movie_count from
+	(select
+	category_id,
+	actor_id,
+	movie_count
+	row_number() over(partition by category_id order by movie_count desc) as popularity_index
+	from actor_movies_data) tb1
+	where productivity_idx = 1;
+
+-------------------------------------------------------------------------------------------------
+-- Question 75. Top customer by movie category
+WITH cust_revenue_by_cat AS (
+    SELECT
+      P.customer_id,
+      FC.category_id,
+      SUM(P.amount) AS revenue
+    FROM payment P
+    INNER JOIN rental R
+    ON R.rental_id = P.rental_id
+    INNER JOIN inventory I
+    ON I.inventory_id = R.inventory_id
+    INNER JOIN film F
+    ON F.film_id = I.film_id
+    INNER JOIN film_category FC
+    ON FC.film_id = F.film_id
+    GROUP BY P.customer_id, FC.category_id
+)
+SELECT category_id, customer_id
+FROM (
+    SELECT
+      customer_id,
+      category_id,
+      ROW_NUMBER() OVER(PARTITION BY category_id ORDER BY revenue DESC) AS
+rev_cat_idx
+FROM cust_revenue_by_cat )X
+WHERE rev_cat_idx = 1;
+
+-------------------------------------------------------------------------------------------------
+-- Question 76. Districts with the most and least customers
+WITH district_cust_cnt AS (
+    SELECT
+        A.district,
+        COUNT(DISTINCT C.customer_id) cust_cnt,
+        ROW_NUMBER() OVER(ORDER BY COUNT(DISTINCT C.customer_id) ASC) AS
+cust_asc_idx,
+        ROW_NUMBER() OVER(ORDER BY COUNT(DISTINCT C.customer_id) DESC) AS
+cust_desc_idx
+    FROM address A
+LEFT JOIN customer C
+ON A.address_id = C.address_id
+    GROUP BY A.district
+)
+SELECT
+    district,
+    'least' AS city_cat
+FROM district_cust_cnt
+WHERE cust_asc_idx = 1
+UNION
+SELECT
+district,
+    'most' AS city_cat
+FROM district_cust_cnt
+WHERE cust_desc_idx = 1
+-------------------------------------------------------------------------------------------------
